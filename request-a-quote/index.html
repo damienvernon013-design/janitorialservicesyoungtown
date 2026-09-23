@@ -38,6 +38,7 @@
     <a href="/our-process/">Our Process</a>
     <a href="/insured-and-bonded/">Insured &amp; Bonded</a>
     <a href="/faq/">FAQ</a>
+    <a href="/blog/">Blog</a>
     <a href="/about/">About</a>
     <a href="/contact/">Contact</a>
     <a href="/request-a-quote/">Get a Quote</a>
@@ -53,47 +54,15 @@
 <div class="page-wrap">
   <div class="content-grid">
     <div class="main-content">
-      <div class="quote-form-box">
-  <h2>Get a Free Quote in 60 Seconds</h2>
-  <div class="form-group">
-    <label for="name">Name</label>
-    <input type="text" id="name" name="name" placeholder="Your name" autocomplete="name">
-  </div>
-  <div class="form-group">
-    <label for="phone">Phone</label>
-    <input type="tel" id="phone" name="phone" placeholder="Best number to reach you" autocomplete="tel">
-  </div>
-  <div class="form-group">
-    <label for="email">Email</label>
-    <input type="email" id="email" name="email" placeholder="Work email" autocomplete="email">
-  </div>
-  <div class="form-group">
-    <label for="zip">Zip code</label>
-    <input type="text" id="zip" name="zip" placeholder="e.g. 85363" autocomplete="postal-code">
-  </div>
-  <div class="form-group">
-    <label for="facility">Facility type</label>
-    <select id="facility" name="facility">
-      <option value="">Select type</option>
-      <option>Office building</option>
-      <option>Medical or dental office</option>
-      <option>Warehouse or industrial</option>
-      <option>School or municipal building</option>
-      <option>Retail or restaurant</option>
-      <option>Other commercial</option>
-    </select>
-  </div>
-  <div class="form-group">
-    <label for="sqft">Approximate sq ft</label>
-    <input type="text" id="sqft" name="sqft" placeholder="e.g. 4,500">
-  </div>
-  <div class="form-group">
-    <label for="notes">Anything else?</label>
-    <textarea id="notes" name="notes" placeholder="Frequency, start date, special requirements..."></textarea>
-  </div>
-  <button type="button" class="btn-primary" style="width:100%;padding:14px;">Request Free Quote</button>
-  <p class="form-note">We respond every business day by 5:00pm. No spam, no sales calls, no obligation.</p>
-</div>
+      <form class="wiz-box" data-quote-wizard novalidate>
+        <div data-wizard-progress></div>
+        <div data-wizard-steps></div>
+        <p data-wizard-status class="form-status" role="status" aria-live="polite"></p>
+        <div class="wiz-nav" data-wizard-nav>
+          <button type="button" class="btn-secondary" data-wizard-back hidden>Back</button>
+          <button type="submit" class="btn-primary" data-wizard-next>Next</button>
+        </div>
+      </form>
       <h2>What Happens After You Submit</h2>
       <ul class="process-steps">
         <li>
@@ -176,8 +145,10 @@
   <div class="footer-bottom">
     <span>&copy; 2025 Youngtown Janitorial Services. Serving Youngtown, AZ and surrounding communities.</span>
     <span><a href="/privacy-policy/">Privacy Policy</a></span>
+    <span>Built and Maintained by <a href="https://infin8content.com/" target="_blank" rel="noopener">Infin8Content</a></span>
   </div>
 </footer>
 <script src="/js/quote-form.js"></script>
+<script src="/assets/js/quote-wizard.js" defer></script>
 </body>
 </html>

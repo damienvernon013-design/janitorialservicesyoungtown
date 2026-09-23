@@ -1,42 +1,44 @@
 # Handoff — janitorialservicesyoungtown.com
 
-**Status: READY TO LAUNCH**
+**Status: READY TO LAUNCH — pending one manual browser test (see below)**
 
 Static HTML microsite for Youngtown Janitorial Services (West Valley, AZ). Deploys to Vercel from this git repo (project already connected — no CLI/manual deploy step needed).
 
 ## What's in this repo
 
-- 44 static HTML pages (43 content pages + `/privacy-policy/`), plain CSS (`styles.css`), no build step, no framework.
-- `/api/submit-lead.js` — Vercel serverless function (Node). Receives quote-form submissions from the browser and forwards them to the CRM-QM `push_lead` endpoint with the Bearer token attached server-side.
-- `/js/quote-form.js` — client script, loaded on every page. Captures UTM params from the URL into `localStorage` on first touch, and wires up the `.quote-form-box` submit button (present on the homepage and `/request-a-quote/`) to POST to `/api/submit-lead`.
+- 70 static HTML pages: 44 core pages (43 content pages + `/privacy-policy/`) plus `blog/` (25 posts + hub). Plain CSS (`styles.css`), no build step, no framework.
+- `/api/submit-lead.js` — Vercel serverless function (Node). Validates and forwards the quote wizard's submission to the CRM-QM `push_lead` endpoint with the Bearer token attached server-side.
+- `/assets/js/quote-wizard.js` — client script loaded only on `/request-a-quote/`. Multi-step quote wizard: qualifying questions, appointment-slot booking (CRM-enforced weekday/lead-time rules), review/confirm, then POST to `/api/submit-lead`.
+- `/js/quote-form.js` — client script loaded on every page. UTM-capture only.
 
-## Contact form / CRM integration
+## Quote wizard / CRM integration
 
-The homepage and `/request-a-quote/` both had a quote form that was previously a UI stub (`onclick="alert(...)"`, no real submission). This is now wired end-to-end:
+The original one-step quote form (`onclick="alert(...)"` stub, later a simple name/phone/email POST) has been replaced with a full multi-step CRM-integrated wizard, matching the pattern used on other sites in this portfolio:
 
-1. Browser collects: name, phone, email, zip, facility type, approx sq ft, notes, plus `utm_source` recovered from `localStorage`.
-2. POSTs JSON to same-origin `/api/submit-lead`.
-3. The serverless function builds the CRM-QM `push_lead` payload (splits name into first/last, folds facility type + sq ft into `customer.notes`) and calls `https://thequotemasters.com/crm_api/api.php?action=push_lead` with `Authorization: Bearer <CRM_API_TOKEN>`.
-4. Token lives only in the Vercel environment variable `CRM_API_TOKEN` — never shipped to the browser, never committed to the repo.
+1. Home hero is a short teaser form (name, phone, approx sq ft) that GET-submits to `/request-a-quote/`, which prefills the wizard from the query string.
+2. `/request-a-quote/` runs the wizard: cleaning frequency, current situation, service-quality questions, number of companies to meet, appointment slot(s), then company/contact details (company name, position, address, phone, email).
+3. On confirm, the wizard POSTs a CRM-shaped payload to `/api/submit-lead`, which validates it server-side (phone/email format, appointment date rules, same-day slot spacing) and forwards it to `https://thequotemasters.com/crm_api/api.php?action=push_lead` with `Authorization: Bearer <CRM_API_TOKEN>`.
+4. `api/submit-lead.js` prepends `SITE_SOURCE_TAG` (`Site: janitorialservicesyoungtown.com`) into `customer.notes` on every submission. `CRM_API_TOKEN` is shared across multiple sites in this portfolio and the CRM's `push_lead` schema has no dedicated site-id field, so this tag is the only way a lead traces back to this domain — do not remove it.
+5. Token lives only in the Vercel environment variable `CRM_API_TOKEN` — never shipped to the browser, never committed to the repo.
 
-**Action required before go-live:** set `CRM_API_TOKEN` in Vercel → Project Settings → Environment Variables (Production + Preview). See `.env.example` for the variable name. The token value is in the CRM-QM API doc provided separately — do not paste it into this repo.
+**Action required before go-live (if not already done):** confirm `CRM_API_TOKEN` is set in Vercel → Project Settings → Environment Variables (Production + Preview). See `.env.example` for the variable name.
 
-### Known simplification
+**Still needed — real browser test:** the wizard has been verified structurally (all `data-wizard-*` hooks present, both JS files pass `node --check`, no leftover values from the reference site this was adapted from) but has not been clicked through end-to-end in an actual browser, and no real submission has been confirmed landing in CRM-QM. Do this on a Vercel preview deploy before relying on it in production.
 
-The CRM `push_lead` payload also supports `company_name`, `industry` (numeric code), and a `questions[]` array (question_id/answer_id pairs) for industry-specific qualifying questions. The current on-site form doesn't collect a company name or map to a specific industry/question schema, so those fields are sent empty/omitted (`industry: 23` placeholder, `questions: []`). If CRM-QM has real industry and question IDs for janitorial leads, update the mapping in `api/submit-lead.js`.
+## Blog section
+
+`blog/` contains 25 posts + a `blog/index.html` hub, covering contracts, pricing guidance (no dollar figures — this site uses "contact for quote" language only), scheduling, compliance, and facility-type-specific guides. Linked from the nav (`Blog`, between FAQ and About) on all 44 core pages, and included in `sitemap.xml` with `changefreq weekly`. Header/nav/footer/JSON-LD (`LocalBusiness` only, no byline or publish date) are identical across every post, generated from a shared template to avoid drift.
 
 ## UTM tracking
 
-`js/quote-form.js` captures `utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content` from the query string on any page load and persists them in `localStorage` under `qjs_utm`. Only `utm_source` is currently forwarded to the CRM (the `push_lead` schema only has one `utm_source` field); the rest are stored for future use if the CRM schema expands.
+`js/quote-form.js` captures `utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content` from the query string into `localStorage` under `qjs_utm`. `assets/js/quote-wizard.js` separately captures UTM params into `sessionStorage` for its own submission (`utmSource` field, resolved from `utm_source`, referrer domain, or `direct`).
 
 ## Site content
 
-- No testing/CRM sandbox available for this project — integration has not been exercised against a live CRM instance. Verify a real submission lands in CRM-QM after `CRM_API_TOKEN` is set and the site is deployed.
-- Full QA checklist for content/copy/schema is in `QA.md` (43-page build, all items passed as of 2026-08-17).
-- Placeholder/secret scan re-run as part of this update: no `{{` tokens, no hardcoded API keys/tokens, no lorem ipsum, no TODO/FIXME markers found anywhere in the tree.
-- `/privacy-policy/` was referenced in every page footer but did not exist — added.
-- Removed a stray malformed directory (`{about,contact,...}`) left over from a bad brace-expansion `mkdir` — it was empty, no content lost.
+- Full QA checklist for content/copy/schema is in `QA.md` (43-page build, all items passed as of 2026-08-17). The blog build re-ran the same checks (no fabricated pricing/credentials, no testimonials/reviews, no street address, zero cross-portfolio links) — all passed.
+- `/privacy-policy/` was referenced in every page footer but did not exist — added in the initial build.
+- Footer credit line — every page's `.footer-bottom` ends with "Built and Maintained by Infin8Content" linking to `https://infin8content.com/`.
 
 ## Deploy
 
-Vercel project is already connected to this repo. Pushing to `main` triggers a deploy — no manual/CLI deploy step needed. Confirm `CRM_API_TOKEN` is set in Vercel env vars before relying on the quote form in production.
+Vercel project is already connected to this repo. Pushing to `main` triggers a deploy — no manual/CLI deploy step needed. Confirm `CRM_API_TOKEN` is set in Vercel env vars, and complete the real-browser wizard test above, before relying on the quote flow in production.
